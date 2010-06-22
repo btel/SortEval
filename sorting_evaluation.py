@@ -2,6 +2,7 @@
 #coding=utf-8
 
 import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import tables
@@ -10,9 +11,11 @@ import eegtools
 import utils
 from cluster import MetricEuclidean
 
+from NeuroTools.parameters import ParameterSet as NTParameterSet
+
 from DataFrame import DataFrame
 
-datapath = os.environ.get("DATAPATH")+'/hdf5/'
+datapath = os.environ.get("DATAPATH")
 
 def spike_in_win(spt, stim, win):
 
@@ -24,20 +27,22 @@ def spike_in_win(spt, stim, win):
 
     return bool
 
-def cluster_distance(dist, clust):
+def cluster_distance(dist, clust, min_trials=1):
    
     clust_lab = np.unique(clust)
     n_clust = np.asarray([np.sum(clust==i) for i in np.unique(clust)])
-    clust_lab = clust_lab[n_clust>0]
-    n_clust = n_clust[n_clust>0]
+    clust_lab = clust_lab[n_clust>min_trials]
+    n_clust = n_clust[n_clust>min_trials]
 
     within_dist = np.mean([dist[clust==i,:][:,clust==i].sum()/(n*(n-1))
                           for n,i in zip(n_clust, clust_lab)])
     between_dist = np.mean([dist[clust==cl1,:][:, clust==cl2].mean()
                            for i, cl1 in enumerate(clust_lab)
                            for cl2 in clust_lab[i+1:]])
-    
-    return (between_dist - within_dist)/between_dist
+   
+    n = dist.shape[0]
+    total_dist = np.sum(dist)/(n*(n-1))
+    return (between_dist - within_dist)/total_dist
 
 
 def which_window(spt, stim, ev):
@@ -48,7 +53,7 @@ def which_window(spt, stim, ev):
     if len(ev)>2:
         cl = bWin.argmax(0)
     else:
-        cl = bWin*1
+        cl = bWin[0,:]*1
 
     return cl
 
@@ -72,13 +77,12 @@ def bootstrap_clust_dist(sp_dist, clust, shuffles):
 
 
 
-def run_analysis(h5f_in, cell, data_win = [0, 20], sp_win = [-0.2,
-    0.8], n_shuffles=100.):
+def run_analysis(h5f_in, cell, sp_win = [-0.2, 0.8], n_shuffles=100.,
+        trials_per_cl=1):
     """
     Parmaeters:
     h5f_in: pytables object
     cell: cell name
-    data_win: data window for plotting
     sp_win: spike waveform window
 
     """
@@ -111,7 +115,8 @@ def run_analysis(h5f_in, cell, data_win = [0, 20], sp_win = [-0.2,
 
     sp_trial_idx = np.searchsorted(stim[:-1], spt_reduced)-1
     sp_pattern_lab = cl[sp_trial_idx]
-    pattern_cluster = cluster_distance(sp_dist, sp_pattern_lab)
+    pattern_cluster = cluster_distance(sp_dist, sp_pattern_lab,
+            trials_per_cl)
     pval_pattern_cluster = bootstrap_clust_dist(sp_dist,
             sp_pattern_lab, shuffle_gen(sp_pattern_lab, n_shuffles))
 
@@ -156,23 +161,55 @@ def run_analysis(h5f_in, cell, data_win = [0, 20], sp_win = [-0.2,
 
     return ret_dict
 
-if __name__=="__main__":
-    h5f = tables.openFile(datapath+'data_microel.h5', 'r')
-    df = DataFrame()
-    out_dir = utils.create_new_dir("sp_trace_view")
+def to_str(x):
+    return "%f +/- %f" % x
 
+def range_str(x):
+    return "%f -- %f" % (np.min(x), np.max(x))
+
+if __name__=="__main__":
+    parameter_file = sys.argv[1]
+    parameters = NTParameterSet(parameter_file)
+    params = parameters.process_params
+
+    h5f = tables.openFile(datapath+parameters.in_datafile, 'r')
+    df = DataFrame({"Dataset":[], "SNR":[], 
+        "Pattern ClustCoef" : [], "Pattern ClustCoef (p)" : [],
+        "Window ClustCoef" : [], "Window ClustCoef (p)" : []},
+        ["Dataset", "SNR", "Pattern ClustCoef","Pattern ClustCoef (p)",
+        "Window ClustCoef", "Window ClustCoef (p)"])
+    out_dir = utils.create_new_dir("Data/", "sorting_evaluation")
+
+    data_list = parameters.cells
+    
     try: 
-        for node in h5f.walkNodes(classname='Array'):
-            node_name = node._v_pathname
-            if node_name[-5:-1]=="cell":
-                print node_name
-                data = run_analysis(h5f, node_name)
-                df.insert_row(data, new_fields_ok=True)
-                fig_fname = os.path.join(out_dir, node_name[1:].replace('/', "_")) 
-                plt.savefig(fig_fname)
-    except:
-        df.write_csv(os.path.join(out_dir, "results.csv"))
+        for node_name in data_list:
+            data = run_analysis(h5f, node_name, params.sp_win,
+                    params.n_shuffles, params.trials_per_class)
+            df.insert_row(data, new_fields_ok=False)
+            fig_fname = os.path.join(out_dir, node_name[1:].replace('/', "_")) 
+            plt.savefig(fig_fname)
+    except ZeroDivisionError:
         raise
+    mean_dict =  {
+            "Dataset": "mean +/- sem", 
+            "SNR": to_str(df.mean_and_sem("SNR")),
+            "Pattern ClustCoef": to_str(df.mean_and_sem("Pattern ClustCoef")), 
+            "Pattern ClustCoef (p)": np.NaN, 
+            "Window ClustCoef": to_str(df.mean_and_sem("Window ClustCoef")),
+            "Window ClustCoef (p)": np.NaN,
+                 }
+    range_dict =  {
+            "Dataset": "range", 
+            "SNR": range_str(df[:]["SNR"]),
+            "Pattern ClustCoef": range_str(df[:]["Pattern ClustCoef"]), 
+            "Pattern ClustCoef (p)": np.NaN, 
+            "Window ClustCoef": range_str(df[:]["Window ClustCoef"]),
+            "Window ClustCoef (p)": np.NaN,
+                 }
+
+    df.insert_row(mean_dict)
+    df.insert_row(range_dict)
     df.write_csv(os.path.join(out_dir, "results.csv"))
 
 
