@@ -52,10 +52,19 @@ def import_subject(subject, h5f, dummy=False):
             electrode_node = h5f.getNode(new_session, 'el%d' % rec['electrode'])
    
         try:
+            data_name = "%(session)s-%(electrode)d" % rec
             sp = bakerlab.readsp(descr.fspike % rec)
+            #correct gains gains
+            if data_name in descr.spike_gains:
+                FS=descr.FS_spike
+                gains, times = descr.spike_gains[data_name]
+                for i in range(len(gains)-1):
+                    sp[times[i]/1000.*FS:times[i+1]/1000*FS]/=gains[i]
+                sp[times[-1]/1000.*FS:]/=gains[-1]
+
             raw_spikes = h5f.createArray(electrode_node, 'raw', sp)
             raw_spikes._v_attrs.sampfreq=descr.FS_spike
-        except:
+        except tables.exceptions.NodeError:
             pass
         spt = bakerlab.readspt(descr.fspt % rec)
         cell_node=h5f.createArray(electrode_node, 'cell%d' % rec['cellid'], spt/200.)
