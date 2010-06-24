@@ -144,7 +144,7 @@ def run_analysis(h5f_in, cell, sp_win = [-0.2, 0.8], n_shuffles=100.,
             if len(sp_index)>1:
                 plt.subplot(n_rows,n_cols,i)
                 (sp_class,sp_time)=eegtools.GetEEGTrials(sp_raw, sp_index/1000*FS, win=sp_win,Fs=FS)
-                plt.plot(sp_class, col)
+                plt.plot(sp_time, sp_class, col)
                 plt.title("Pattern %s" % utils.dec2binstr(c,len(sp_events)-1))
 
 
