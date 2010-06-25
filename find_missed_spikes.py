@@ -51,6 +51,9 @@ def find_spikes(data_dict,win, is_spike, sp_win=[-0.2, 0.8]):
             if len(trains_new[i])>0:
                 ax.plot(trains_new[i],np.ones(len(trains_new[i]))*0.8,
                         "*")
+            if i in missed_trains:
+                ax.plot(missed_trains[i],np.ones(len(missed_trains[i]))*0.8,
+                        "r*")
             ax.set_ylim(0,1)
             ax.set_title("%d/%d" % (i, sp_waves.shape[1]))
             fig.canvas.draw()
@@ -68,15 +71,24 @@ def find_spikes(data_dict,win, is_spike, sp_win=[-0.2, 0.8]):
 
 
     def onpick(event):
-        print event.ind
-        _win = (np.array(sp_win)/1000.*FS).astype(int)
-        sp_idx = (spt_idx[i] + win[0]/1000.*FS + event.ind[0])
-        spike = sp_raw[int(sp_idx)+_win[0]:int(sp_idx)+_win[1]]
+        if event.mouseevent.button == 1:
+            #append a new spike
+            _win = (np.array(sp_win)/1000.*FS).astype(int)
+            sp_idx = (spt_idx[i] + win[0]/1000.*FS + event.ind[0])
+            spike = sp_raw[int(sp_idx)+_win[0]:int(sp_idx)+_win[1]]
         
-        missed_spikes.append(sp_idx/FS*1000.)
-        ax2.plot(spike, 'k')
-        fig2.canvas.draw()
-        next_plot()
+            missed_spikes.append(sp_idx/FS*1000.)
+            if not i in missed_trains:
+                missed_trains[i] = []
+            missed_trains[i].append(sp_idx/FS*1000-stim[i])
+            ax2.plot(spike, 'k')
+            fig2.canvas.draw()
+            next_plot()
+        elif event.mouseevent.button == 3:
+            #implement deleting a spike
+            #for now just go to the previous trial
+            next_plot(-1)
+
 
 
     stim = data_dict['stim']
@@ -94,6 +106,7 @@ def find_spikes(data_dict,win, is_spike, sp_win=[-0.2, 0.8]):
             sp_waves.min())/(sp_waves.max()-sp_waves.min())
 
     missed_spikes = []
+    missed_trains = {}
     fig = plt.figure()
     ax = plt.subplot(111)
     next_plot()
@@ -135,6 +148,8 @@ if __name__ == "__main__":
     export_spikes.tofile(os.path.join(out_dir, "missed.spt"))
 
     plot_spikes(data,export_spikes/200.)
+
+    print "Data saved to:", out_dir
 
     h5f.close()
 

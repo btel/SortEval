@@ -12,14 +12,15 @@ DATAPATH = os.environ.get("DATAPATH")
 
 if __name__ == "__main__":
     #main
-    h5_fname = os.path.join(DATAPATH, "hdf5/data_microel.h5")
+    h5_fname = os.path.join(DATAPATH, "hdf5/test.h5")
     dataset = "/Joy/s3349a16/el7/cell1"
-    out_dir = "./Data/find_missed_spikes/23-06-2010/Sim_15"
+    out_dir = "./Data/find_missed_spikes/25-06-2010/Sim_9"
     sp_win = [-0.2, 0.8]
 
-    spt = sort.io.bakerlab.read_spt(out_dir, "cluster")
+    spt = sort.io.bakerlab.read_spt(out_dir, "missed_rest_rest")
     sp = sort.io.hdf5.read_sp(h5_fname, dataset)
     
+    spt = sort.extract.align_spikes(sp, spt, sp_win, type="min", resample=10)
     sp_waves = sort.extract.extract_spikes(sp, spt, sp_win)
     sort.plotting.plot_spikes(sp_waves)
 

@@ -53,7 +53,7 @@ def import_subject(subject, h5f, dummy=False):
    
         try:
             data_name = "%(session)s-%(electrode)d" % rec
-            sp = bakerlab.readsp(descr.fspike % rec)
+            sp = bakerlab.readsp(descr.fspike % rec)*1.
             #correct gains gains
             if data_name in descr.spike_gains:
                 FS=descr.FS_spike
