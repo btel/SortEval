@@ -18,7 +18,7 @@ if __name__ == "__main__":
     out_dir = "./Data/find_missed_spikes/23-06-2010/Sim_15"
     sp_win = [-0.2, 0.8]
 
-    spt_fname = "cluster"
+    spt_fname = "missed"
 
     spt = sort.io.bakerlab.read_spt(out_dir, spt_fname)
     sp = sort.io.hdf5.read_sp(h5_fname, dataset)
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             sort.features.fetPCs(sp_waves)))
 
 
-    clust_idx = sort.ui.manual_sort.show(features, sp_waves, [0,2])
+    clust_idx = sort.ui.manual_sort.show(features, sp_waves, [1,2])
 
     clust, rest = sort.ui.manual_sort.cluster_spt(spt, clust_idx)
 
