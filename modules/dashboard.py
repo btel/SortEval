@@ -8,8 +8,6 @@ import os, sys
 import patterns
 import hdf5tools
 
-from NeuroTools.parameters import ParameterSet as NTParameterSet
-
 import wx
 import wx.aui
 import matplotlib as mpl
