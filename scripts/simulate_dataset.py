@@ -11,7 +11,7 @@ from spike_analysis import basic
 
 spike_src = "/Gollum/s39gollum03/el1"
 cell_id = "cell1"
-background_src = "/Gollum/s39gollum03/el1"
+background_src = "/Gollum/s39gollum03/el3"
 sp_win = [-2, 2]
 binsz=0.01
 pow_frac = 1
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     
 
     out_filter.write_spt({'data':spt_simulated},
-                         "/TestSubject/sSession01/el1/cell1",
+                         "/TestSubject/sSession01/el1/cell1_orig",
                         overwrite=True)
     out_filter.write_spt(stim_background,
                          "/TestSubject/sSession01/el1/stim",

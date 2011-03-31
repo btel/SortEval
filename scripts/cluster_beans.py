@@ -6,17 +6,20 @@ from spike_beans import base, components
 import numpy as np
 import time
 
-dataset = "/Gollum/s39gollum03/el1"
+#dataset = "/Gollum/s39gollum03/el1"
+dataset = "/TestSubject/sSession01/el1"
 contact = 1
 type = "min"
-thresh = -200
+thresh = "auto"
 filter_freq= (1000., 800.)
 #filter_freq = None
 
-conf_file = "../../data/gollum_export.inf"
+#conf_file = "../../data/gollum_export.inf"
+#io_filter = components.BakerlabSource(conf_file, dataset, f_filter=filter_freq)
+h5_file = "simulated.h5"
+io_filter = components.PyTablesSource(h5_file, dataset, f_filter=filter_freq)
 sp_win = [-0.6, 0.8]
 
-io_filter = components.BakerlabSource(conf_file, dataset, f_filter=filter_freq)
 base.features.Provide("SignalSource",      io_filter)
 base.features.Provide("EventsOutput",      io_filter)
 base.features.Provide("SpikeMarkerSource", components.SpikeDetector(contact=contact, 
