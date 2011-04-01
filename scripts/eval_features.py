@@ -1,16 +1,8 @@
 #!/usr/bin/env python
 #coding=utf-8
 
-"""
-Based on raw recordings detect spikes, calculate features and do automatic 
-clustering with k-means.
-
-TODO:
-After clustering the spike times are exported back to HDF5 (cell_kmeansX, where 
-X is cluster index)
-"""
-
 import numpy as np
+import matplotlib.pyplot as plt
 import os, sys
 
 import spike_sort as sort
@@ -18,9 +10,10 @@ from spike_sort.io.filters import PyTablesFilter, BakerlabFilter
 import spike_sort.ui.manual_sort
 import tables
 from scipy.stats import spearmanr, kde
+from scipy.spatial import KDTree
 
 import time
-
+from spike_sort.ui import spike_browser
 
 def univariate_metric(metric_func, features, clust_idx):
     n_feats = features['data'].shape[1]
@@ -47,7 +40,6 @@ def check_intvs(times, centers, win):
         (times[:,None]>=intvs[None,:,0])& 
         (times[:,None]<intvs[None,:,1])
        )
-
     return b.any(1)
 
 
@@ -105,6 +97,31 @@ def kullback_leibler(x, y, nbins=20):
     return KL_div
 
 
+def k_nearest(features, clust_idx, K=5, n_pts='all', eps=0.05):
+
+    def _calc_frac(l):
+        return np.sum((real_cl==l) & (cl==l))*1./np.sum(real_cl==l)
+    data = features['data']
+
+    k_tree = KDTree(data)
+    
+    if n_pts=='all':
+        samp_pts = data
+        real_cl = clust_idx
+    else:
+        i = np.argsort(np.random.rand(data.shape[0]))
+        samp_pts = data[i[:n_pts],:]
+        real_cl = clust_idx[i[:n_pts]]
+
+    dist, neigh_idx = k_tree.query(samp_pts, K+1, eps)
+
+    cl_neigh = clust_idx[neigh_idx]
+    #remove the point itself from the neighbours
+    cl_neigh = cl_neigh[:,1:]
+    cl = 1*(cl_neigh.sum(1)>=K/2)
+
+    return (_calc_frac(0)+_calc_frac(1))/2.
+
 def combine_spikes(spt1_dict, spt2_dict, tol=0.5):
     """
     spt1, spt2 - spike times dicts
@@ -150,14 +167,15 @@ if __name__ == "__main__":
     h5filter = PyTablesFilter(h5_fname)
 
     dataset = "/TestSubject/sSession01/el1"
-    sp_win = [-0.2, 0.8]
-    f_filter= (1000., 800.)
-    thresh = 'auto'
+    sp_win = [-0.4, 0.8]
+    f_filter=None
+    thresh = '4'
     type='max'
     
     start = time.time()
     sp = h5filter.read_sp(dataset)
     
+    #filter data
     if f_filter is not None:
         filter = sort.extract.Filter("ellip", *f_filter)
         sp = sort.extract.filter_proxy(sp, filter)
@@ -170,13 +188,17 @@ if __name__ == "__main__":
                                         type=type, resample=10)
     spt_det = remove_stimulus(spt_det, stim)
 
-    spt_orig = sort.extract.align_spikes(sp, spt_orig, sp_win, 
-                                         type=type, resample=10)
+    #spt_orig = sort.extract.align_spikes(sp, spt_orig, sp_win, 
+    #                                     type=type, resample=10)
     
-    spt, clust_idx, n_missing = combine_spikes(spt_det, spt_orig)
-    #take only one channel
+    spt, clust_idx, n_missing = combine_spikes(spt_det, spt_orig,
+                                               tol=1.5)
+    spt = sort.extract.align_spikes(sp, spt, sp_win, 
+                                    type=type, resample=10,
+                                    remove=False)
+    
     sp_waves = sort.extract.extract_spikes(sp, spt, sp_win,
-                                           contacts=[0])
+                                           contacts=[0,1])
     features = sort.features.combine(
             (
             sort.features.fetP2P(sp_waves),
@@ -187,14 +209,24 @@ if __name__ == "__main__":
     n_total = len(spt_orig['data'])
     single_metric = univariate_metric(mutual_information, 
                                       features, clust_idx)
-    multi_metric = multivariate_metric(kullback_leibler, 
-                                      features, clust_idx)
+    #multi_metric = multivariate_metric(kullback_leibler, 
+    #                                  features, clust_idx)
+    knearest_metric = k_nearest(features, clust_idx, n_pts=1000)
+
+    #spike_browser.browse_data_tk(sp, spt, clust_idx)
 
     print "Total n/o spikes:", n_total
     print "Number of undetected spikes: %d (%f)" % (n_missing,
                                                     n_missing*100./n_total)
-    print single_metric
-    print multi_metric
-    spike_sort.ui.plotting.plot_features(features, clust_idx)
+    print "Univariate MI:", single_metric
+    #print "Mulitvariate KL divergence:", multi_metric
+    print "K-nearest class. rate:", knearest_metric
+    
+    plt_features = sort.features.combine((sort.features.fetSpIdx(sp_waves),
+                                          features),norm=True)
+    spike_sort.ui.plotting.plot_features(plt_features, clust_idx)
+    plt.figure()
+    spike_sort.ui.plotting.plot_spikes(sp_waves, clust_idx)
+
     spike_sort.ui.plotting.show()
     h5filter.close()
