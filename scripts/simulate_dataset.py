@@ -10,8 +10,7 @@ import spike_sort as sort
 from spike_analysis import basic
 import evaluate as eval
 
-spike_src = "/Gollum/s39gollum03/el1"
-cell_id = "cell1"
+spike_src = "/Gollum/s39gollum03/el1/cell1"
 background_src = "/Gollum/s39gollum03/el3"
 sp_win = [-2, 2]
 pow_frac = 1
@@ -23,7 +22,7 @@ if __name__ == "__main__":
     out_filter = filters.PyTablesFilter("simulated.h5")
 
     sp_sim, stim_bg, spt_sim = eval.mix_cellbg(in_filter, spike_src,
-                                              cell_id, background_src,
+                                               background_src,
                                               sp_win, pow_frac) 
     #export
     out_filter.write_spt(spt_sim, out_dataset+"/cell1_orig",

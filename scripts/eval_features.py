@@ -50,7 +50,6 @@ if __name__ == "__main__":
     
     single_metric, knearest_metric = calc_metrics(features, clust_idx)
     
-    
     n_total = len(spt_orig['data'])
     print "Total n/o spikes:", n_total
     print "Number of undetected spikes: %d (%f)" % (n_missing,

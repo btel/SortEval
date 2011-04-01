@@ -20,9 +20,11 @@ def read_data(filter, dataset, cell_id=None):
         return raw, stim, spt
     return raw, stim
 
-def mix_cellbg(filter, spike_src, cell_id, background_src, sp_win,
+def mix_cellbg(filter, cell_src, background_src, sp_win,
                pow_frac, binsz=0.01):
     #read data from files
+
+    spike_src, cell_id = cell_src.rsplit('/', 1)
     raw_cell, stim_cell, spt_cell = read_data(filter, spike_src,
                                               cell_id)
     raw_bg, stim_bg = read_data(filter, background_src)
