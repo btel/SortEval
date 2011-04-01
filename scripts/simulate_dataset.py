@@ -10,10 +10,10 @@ import spike_sort as sort
 from spike_analysis import basic
 import evaluate as eval
 
-spike_src = "/Gollum/s39gollum03/el1/cell1"
+spike_src = "/Gollum/s39gollum02/el5/cell1"
 background_src = "/Gollum/s39gollum03/el3"
 sp_win = [-2, 2]
-pow_frac = 1
+pow_frac = 5
 out_dataset = "/TestSubject/sSession01/el1"
 
 
@@ -33,6 +33,7 @@ if __name__ == "__main__":
                        overwrite=True)
    
     #plotting
+    print "Total spikes: ", len(spt_sim['data'])
     raw_bg, _ = eval.read_data(in_filter, background_src)
     basic.plotPSTH(spt_sim['data'], stim_bg['data'], win=[0,300])
     plt.figure()
