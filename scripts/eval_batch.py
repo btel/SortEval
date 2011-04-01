@@ -9,6 +9,7 @@ sys.path.append("../modules/")
 from spike_sort.io.filters import  BakerlabFilter
 
 import pymongo
+import datetime
 
 connection = pymongo.Connection('localhost', 27017)
 
@@ -59,9 +60,29 @@ def single_run(filter, spk_src, bg_src, params):
 
 def local_run(filter, datasets, params, db_out):
 
+    date = datetime.datetime.utcnow()
     for spk_src, bg_src in datasets:
         out = single_run(filter, spk_src, bg_src, params)
+        out['date'] = date
         db_out.insert(out)
+
+def parallel_run(filter, datasets, params, db_out):
+
+    from IPython.kernel import client
+    remote_path = "/Users/bartosz/SVN/personal/Analysis/SpikeSorting/modules" 
+    
+    mec = client.MultiEngineClient()
+    mec.push_function({'single_run': single_run})
+    mec['params'] = params
+    mec['filter'] = filter
+    mec.execute('import sys; sys.path.append("%s")' % remote_path)
+    mec.scatter('datasets', datasets)
+    mec.execute('''out = [single_run(filter, spk, bg, params)
+                          for spk, bg in datasets]''')
+    results = mec.gather('out')
+
+    db_out.insert(results)
+
 
 def main():
     _, param_file = sys.argv
@@ -85,6 +106,8 @@ def main():
 
     if target == 'local':
         local_run(filter, src_pairs, process, collection)
+    elif target == 'cluster':
+        parallel_run(filter, src_pairs, process, collection)
 
 
 if __name__ == "__main__":
