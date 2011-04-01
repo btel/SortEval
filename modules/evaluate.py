@@ -136,7 +136,7 @@ def combine_spikes(spt1_dict, spt2_dict, tol=0.5):
 
     overlap = check_intvs(spt1, spt2, [-tol, tol])
     missing = ~(check_intvs(spt2, spt1, [-tol, tol]))
-    n_missing = np.sum(missing)
+    n_missing = int(np.sum(missing))
 
     spt1 = spt1[~overlap]
     

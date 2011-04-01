@@ -8,6 +8,13 @@ sys.path.append("../modules/")
 
 from spike_sort.io.filters import  BakerlabFilter
 
+import pymongo
+
+connection = pymongo.Connection('localhost', 27017)
+
+#np.random.seed(11111)
+np.random.seed(99999)
+
 def single_run(filter, spk_src, bg_src, params):
     import evaluate as eval
 
@@ -39,21 +46,26 @@ def single_run(filter, spk_src, bg_src, params):
 
     n_total = len(spt_real['data'])
 
-    return (spk_src, bg_src, n_total, n_missing, uni_metric,
-            multi_metric)
+    result_dict= {"cell" : spk_src,
+                  "electrode:" : bg_src,
+                  "spikes_total" : n_total,
+                  "spikes_missed" : n_missing,
+                  "mutual_information" : uni_metric,
+                  "k_nearest" : multi_metric}
 
-def local_run(filter, datasets, params):
+    result_dict.update(params)
 
-    result_list = []
+    return result_dict
+
+def local_run(filter, datasets, params, db_out):
 
     for spk_src, bg_src in datasets:
         out = single_run(filter, spk_src, bg_src, params)
-        result_list.append(out)
-
-    return result_list
+        db_out.insert(out)
 
 def main():
     _, param_file = sys.argv
+
 
     with open(param_file) as f:
         params = json.load(f)
@@ -63,14 +75,16 @@ def main():
     conf_file = params['rec_conf']
     target    = params['target']
     process   = params['process_params']
+    db_name   = params['database']
 
     src_pairs = [(cell, bg) for cell in cell_list for bg in bg_list]
 
     filter = BakerlabFilter(conf_file)
+    db = connection[db_name]
+    collection = db['test']
 
     if target == 'local':
-        out = local_run(filter, src_pairs, process)
-    print out
+        local_run(filter, src_pairs, process, collection)
 
 
 if __name__ == "__main__":
