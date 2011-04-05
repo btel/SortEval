@@ -35,7 +35,7 @@ if __name__ == "__main__":
     io_filter = BakerlabFilter("../data/gollum.inf")
     export_filter = PyTablesFilter("../data/exported.h5")
 
-    sp = io_filter.read_sp(dataset,memmap="numpy")
+    sp = io_filter.read_sp(dataset,memmap="none")
     spt = sort.extract.detect_spikes(sp,  contact=3, thresh='auto')
     
     spt = sort.extract.align_spikes(sp, spt, sp_win, type="max",
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     features = sort.features.combine(
             (
             sort.features.fetP2P(sp_waves,contacts=[0,1,2,3]),
-            sort.features.fetPCs(sp_waves)),
+            sort.features.fetPCs(sp_waves, ncomps=1)),
             normalize=True
     )
 
