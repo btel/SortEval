@@ -13,10 +13,12 @@ import datetime
 
 connection = pymongo.Connection('localhost', 27017)
 
-#np.random.seed(11111)
-np.random.seed(99999)
+np.random.seed(11111)
+#np.random.seed(99999)
 
 def single_run(filter, spk_src, bg_src, params):
+    import evaluate
+    reload(evaluate)
     import evaluate as eval
 
     sp_win    = params['sp_win']

@@ -76,9 +76,12 @@ def binom_generator(psth, n_trials, bin=0.25):
 def add_spikes(sp_data, spt_dict, sp_wave, pow_frac):
     spt = spt_dict['data']
     fs = sp_data['FS']
-    center_idx = spt/1000.*fs
-    n_pts = sp_wave.shape[0]
     data = sp_data['data'].copy()
+    n_chans, n_data_pts = data.shape
+    n_pts = sp_wave.shape[0]
+    center_idx = (spt/1000.*fs).astype(int)
+    center_idx = center_idx[((center_idx+n_pts/2+1)<n_data_pts) &
+                            ((center_idx-n_pts/2-1)>0)]
     data_std = np.std(data[:,:10*fs],1)
     spike_std = np.std(sp_wave,0)
     frac = data_std/spike_std*pow_frac
