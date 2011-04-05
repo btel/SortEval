@@ -13,12 +13,7 @@ import datetime
 
 connection = pymongo.Connection('localhost', 27017)
 
-np.random.seed(11111)
-#np.random.seed(99999)
-
 def single_run(filter, spk_src, bg_src, params):
-    import evaluate
-    reload(evaluate)
     import evaluate as eval
 
     sp_win    = params['sp_win']
@@ -71,13 +66,11 @@ def local_run(filter, datasets, params, db_out):
 def parallel_run(filter, datasets, params, db_out):
 
     from IPython.kernel import client
-    remote_path = "/Users/bartosz/SVN/personal/Analysis/SpikeSorting/modules" 
     
     mec = client.MultiEngineClient()
     mec.push_function({'single_run': single_run})
     mec['params'] = params
     mec['filter'] = filter
-    mec.execute('import sys; sys.path.append("%s")' % remote_path)
     mec.scatter('datasets', datasets)
     mec.execute('''out = [single_run(filter, spk, bg, params)
                           for spk, bg in datasets]''')

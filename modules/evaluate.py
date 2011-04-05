@@ -36,7 +36,7 @@ def mix_cellbg(filter, cell_src, background_src, sp_win,
     spt_sim = generate_spt(spt_cell, stim_cell, stim_bg, 
                                  [0,300], binsz)
     #add spikes
-    sp_sim = add_spikes(raw_bg, spt_sim, avg_spike, pow_frac)
+    sp_sim, spt_sim = add_spikes(raw_bg, spt_sim, avg_spike, pow_frac)
 
     return sp_sim, stim_bg, spt_sim
 
@@ -80,8 +80,10 @@ def add_spikes(sp_data, spt_dict, sp_wave, pow_frac):
     n_chans, n_data_pts = data.shape
     n_pts = sp_wave.shape[0]
     center_idx = (spt/1000.*fs).astype(int)
-    center_idx = center_idx[((center_idx+n_pts/2+1)<n_data_pts) &
-                            ((center_idx-n_pts/2-1)>0)]
+    in_range = (((center_idx+n_pts/2+1)<n_data_pts) &
+                            ((center_idx-n_pts/2-1)>0))
+    center_idx = center_idx[in_range]
+    spt_dict['data']=spt_dict['data'][in_range]
     data_std = np.std(data[:,:10*fs],1)
     spike_std = np.std(sp_wave,0)
     frac = data_std/spike_std*pow_frac
@@ -91,7 +93,7 @@ def add_spikes(sp_data, spt_dict, sp_wave, pow_frac):
         data[:,(t-n_pts/2):(t+n_pts/2)] += sp_wave.T
     ret_dict = sp_data.copy()
     ret_dict['data']=data
-    return ret_dict
+    return ret_dict, spt_dict
 
 
 #data pre-processing
