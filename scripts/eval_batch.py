@@ -52,7 +52,10 @@ def single_run(filter, spk_src, bg_src, params):
                   "k_nearest" : multi_metric}
 
     result_dict.update(params)
-
+    
+    import socket
+    result_dict['host'] = socket.gethostname()
+    
     return result_dict
 
 def local_run(filter, datasets, params, db_out):
@@ -67,6 +70,7 @@ def parallel_run(filter, datasets, params, db_out):
 
     from IPython.kernel import client
     
+    date = datetime.datetime.utcnow()
     mec = client.MultiEngineClient()
     mec.push_function({'single_run': single_run})
     mec['params'] = params
@@ -75,7 +79,9 @@ def parallel_run(filter, datasets, params, db_out):
     mec.execute('''out = [single_run(filter, spk, bg, params)
                           for spk, bg in datasets]''')
     results = mec.gather('out')
-
+  
+    for r in results:
+        r['date']=date
     db_out.insert(results)
 
 
