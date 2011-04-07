@@ -45,7 +45,7 @@ def single_run(filter, spk_src, bg_src, params):
     n_total = len(spt_real['data'])
 
     result_dict= {"cell" : spk_src,
-                  "electrode:" : bg_src,
+                  "electrode" : bg_src,
                   "spikes_total" : n_total,
                   "spikes_missed" : n_missing,
                   "mutual_information" : uni_metric,
@@ -102,8 +102,8 @@ def main():
     src_pairs = [(cell, bg) for cell in cell_list for bg in bg_list]
 
     filter = BakerlabFilter(conf_file)
-    db = connection[db_name]
-    collection = db['test']
+    db = connection['eval_batch']
+    collection = db[db_name]
 
     if target == 'local':
         local_run(filter, src_pairs, process, collection)

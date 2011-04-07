@@ -10,8 +10,8 @@ import spike_sort as sort
 from spike_analysis import basic
 import evaluate as eval
 
-spike_src = "/Gollum/s39gollum02/el5/cell1"
-background_src = "/Gollum/s39gollum03/el3"
+spike_src = "/Gollum/s44gollum07/el3/cell1"
+background_src = "/Gollum/s44gollum01/el4"
 sp_win = [-2, 2]
 pow_frac = 5
 out_dataset = "/TestSubject/sSession01/el1"
