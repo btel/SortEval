@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 #coding=utf-8
+__version__ = "Git:$Id$"
 
 import numpy as np
 from spike_analysis import basic
