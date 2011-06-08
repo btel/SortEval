@@ -13,6 +13,7 @@ import datetime
 
 connection = pymongo.Connection('localhost', 27017)
 
+
 def single_run(filter, spk_src, bg_src, params):
     import evaluate as eval
 
@@ -54,7 +55,11 @@ def single_run(filter, spk_src, bg_src, params):
     result_dict.update(params)
     
     import socket
+    #from sim_manager import get_version
+
     result_dict['host'] = socket.gethostname()
+    #result_dict['dependencies'] ={'evaluate': get_version(eval),
+    #                              'spike_sort': get_version(eval.sort)}
     
     return result_dict
 
